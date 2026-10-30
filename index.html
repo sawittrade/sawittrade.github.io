@@ -183,7 +183,6 @@ tr.tot td{border-top:2px solid var(--ln);border-bottom:0;background:var(--sf2)}
     <h2 style="margin-top:0">Pengaturan koneksi</h2>
     <label>URL Web App Apps Script<input id="api" placeholder="https://script.google.com/macros/s/.../exec"></label>
     <label>Token (opsional, sama dengan di Code.gs)<input id="tok" type="password"></label>
-    <label>Modal awal (USD)<input id="cap" type="number" step="any" value="1000"></label>
     <label>Kurs USD/IDR manual (opsional, kosongkan untuk otomatis)<input id="fxman" type="number" step="any" placeholder="mis. 16250"></label>
     <div class="hint">Tanpa URL, data disimpan di browser ini saja (mode lokal).</div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
@@ -222,7 +221,7 @@ const DEFAULT_API='https://script.google.com/macros/s/AKfycbzmoaC-K1TAmTy5q84SeX
 const HASH='d4a1c4f7714bcb6ebe6deb14039c423c8ccbc8c5d48a03f25312c0eb911fe24d'; // SHA-256 password, hanya dipakai di mode lokal (tanpa Apps Script)
 const SS={get:()=>{try{return sessionStorage.getItem('tj_adm')||''}catch(e){return ''}},set:v=>{try{sessionStorage.setItem('tj_adm',v)}catch(e){}}};
 let ADM=SS.get();
-let T=[],API=LS.get('tj_api')||DEFAULT_API,TOK=LS.get('tj_tok'),CAP=+LS.get('tj_cap',String(DEFAULT_CAP))||0,FX={rate:0,t:0,src:''};
+let T=[],API=LS.get('tj_api')||DEFAULT_API,TOK=LS.get('tj_tok'),CAP=API?DEFAULT_CAP:(+LS.get('tj_cap',String(DEFAULT_CAP))||0),LOADED=false,FX={rate:0,t:0,src:''};
 const fmt=(n,d=2)=>(n<0?'-':'')+'$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
 const pct=n=>CAP?(n>0?'+':'')+(n/CAP*100).toFixed(2)+'%':'-';
 const sg=n=>n>0?'up':n<0?'dn':'';
@@ -259,12 +258,12 @@ async function loadFx(force){
   render()
 }
 function renderTop(){
-  const tot=T.reduce((x,t)=>x+net(t),0),bal=CAP+tot,ok=FX.rate>0;
+  const tot=T.reduce((x,t)=>x+net(t),0),bal=CAP+tot,ok=FX.rate>0,wait=API&&!LOADED;
   const when=FX.t?new Date(FX.t).toLocaleString('id-ID',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
   $('#top').innerHTML=`<div class="kpi main"><div class="fxh"><div class="l">Total Balance</div><button class="mini adm-only" id="bCap" type="button">✎ Ubah modal</button></div>
-    <div class="v ${sg(tot)}">${fmt(bal)} <small>USD</small></div>
-    <div class="idr">${ok?'≈ '+idr(bal*FX.rate):'Kurs belum tersedia'}</div>
-    <div class="s">Modal ${fmt(CAP,0)} ${tot<0?'−':'+'} PNL ${fmt(Math.abs(tot))}</div></div>
+    <div class="v ${wait?'':sg(tot)}">${wait?'…':fmt(bal)+' <small>USD</small>'}</div>
+    <div class="idr">${wait?'':ok?'≈ '+idr(bal*FX.rate):'Kurs belum tersedia'}</div>
+    <div class="s">${wait?'Memuat dari Google Sheets…':`Modal ${fmt(CAP,0)} ${tot<0?'−':'+'} PNL ${fmt(Math.abs(tot))}`}</div></div>
    <div class="kpi"><div class="fxh"><div class="l">Kurs USD / IDR</div><button class="mini" id="bFx" type="button" aria-label="Perbarui kurs">↻ Perbarui</button></div>
     <div class="v">${ok?idr(FX.rate):'-'}</div>
     <div class="s">${ok?'1 USD · '+FX.src+(when?' · '+when:''):'Gagal mengambil kurs. Tekan Perbarui atau isi kurs manual di Pengaturan.'}</div></div>`;
@@ -280,9 +279,9 @@ async function load(){
   try{status('','Menghubungkan…');
     const r=await fetch(API+(API.includes('?')?'&':'?')+'token='+encodeURIComponent(TOK)+'&_='+Date.now(),{cache:'no-store'});
     const j=await parse(r);
-    if(!j.ok)throw new Error(j.error);T=clean(j.data);if(j.capital!=null)CAP=Number(j.capital)||0;status('on','Terhubung ke Sheets')
+    if(!j.ok)throw new Error(j.error);T=clean(j.data);CAP=j.capital!=null?Number(j.capital)||0:DEFAULT_CAP;status('on','Terhubung ke Sheets')
   }catch(e){status('err','Gagal memuat');banner('err','Gagal memuat data dari Google Sheets: '+e.message+' Tekan "Muat ulang" untuk mencoba lagi.')}
-  render()
+  LOADED=true;render()
 }
 async function post(body){
   const r=await fetch(API,{method:'POST',body:JSON.stringify({admin:ADM,...body,token:TOK})}); // text/plain: tanpa preflight CORS
@@ -400,8 +399,8 @@ $('#tb').onclick=async e=>{const id=e.target.dataset?.id;if(!ADM||!id||!confirm(
   try{await delTrade(id);toast('Transaksi dihapus');render()}catch(err){toast('Gagal menghapus: '+err.message)}};
 ['#fMonth','#fSym','#fRes'].forEach(s=>$(s).onchange=render);
 $('#bRefresh').onclick=load;
-$('#bSet').onclick=()=>{$('#api').value=API;$('#tok').value=TOK;$('#cap').value=CAP;$('#fxman').value=FXMAN()||'';$('#dlg').showModal()};
-$('#bOk').onclick=()=>{API=$('#api').value.trim()||DEFAULT_API;TOK=$('#tok').value;CAP=+$('#cap').value||0;LS.set('tj_api',API);LS.set('tj_tok',TOK);LS.set('tj_cap',CAP);if(API&&ADM)post({action:'setcap',value:CAP}).catch(e=>toast('Modal belum tersimpan ke Sheets: '+e.message));LS.set('tj_fxman',$('#fxman').value);setTimeout(()=>{load();loadFx(true)},0)};
+$('#bSet').onclick=()=>{$('#api').value=API;$('#tok').value=TOK;$('#fxman').value=FXMAN()||'';$('#dlg').showModal()};
+$('#bOk').onclick=()=>{API=$('#api').value.trim()||DEFAULT_API;TOK=$('#tok').value;LS.set('tj_api',API);LS.set('tj_tok',TOK);LS.set('tj_fxman',$('#fxman').value);setTimeout(()=>{load();loadFx(true)},0)};
 $('#bCsv').onclick=()=>{if(!T.length)return toast('Belum ada data untuk diekspor');
   const h=['Tanggal','Instrumen','PNL','Fee','NetPNL','Catatan'];
   const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
@@ -418,8 +417,12 @@ $('#fL').onsubmit=async e=>{e.preventDefault();const p=$('#pw').value;
 document.addEventListener('click',e=>{if(e.target.id==='bCapCancel')$('#dlgC').close()});
 $('#fC').onsubmit=async e=>{e.preventDefault();const v=+$('#capv').value;
   if(isNaN(v)||v<0){$('#errC').textContent='Masukkan angka yang valid';return}
-  try{if(API)await post({action:'setcap',value:v});CAP=v;LS.set('tj_cap',v);$('#dlgC').close();render();toast('Modal diperbarui')}
-  catch(err){$('#errC').textContent='Gagal menyimpan: '+err.message}};
+  try{
+    if(API){await post({action:'setcap',value:v});await load();if(CAP!==v)throw new Error('Server tidak menyimpan nilai modal. Pastikan Code.gs terbaru sudah di-deploy.')}
+    else{CAP=v;LS.set('tj_cap',v);render()}
+    $('#dlgC').close();toast('Modal diperbarui')}
+  catch(err){let m=err.message;if(/tidak dikenal/i.test(m))m='Code.gs di Apps Script belum versi terbaru. Tempel kode terbaru, lalu Deploy → Manage deployments → Edit → New version.';
+    $('#errC').textContent='Gagal menyimpan: '+m}};
 applyAdmin();load();loadFx();
 let lastW=innerWidth,rt;addEventListener('resize',()=>{if(innerWidth===lastW)return;lastW=innerWidth;clearTimeout(rt);rt=setTimeout(render,150)});
 </script>
