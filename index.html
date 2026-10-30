@@ -112,6 +112,7 @@ body:not(.adm) .grid{grid-template-columns:1fr}
   dialog{width:94%;padding:14px}
   .toast{bottom:calc(20px + env(safe-area-inset-bottom));max-width:90%;text-align:center}
 }
+tr.tot td{border-top:2px solid var(--ln);border-bottom:0;background:var(--sf2)}
 .banner{padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:13px}.banner[hidden]{display:none}
 .banner.warn{background:var(--sf2);border:1px solid #e0a800;color:var(--ink)}
 .banner.err{background:var(--dnbg);border:1px solid var(--dn);color:var(--dn)}
@@ -157,7 +158,7 @@ body:not(.adm) .grid{grid-template-columns:1fr}
       <div class="card"><h2>PNL harian</h2><div class="chartbox" id="daily"></div></div>
       <div class="card"><h2 id="calT">Kalender</h2><div class="cal" id="cal"></div></div>
     </div>
-    <div class="card"><h2>Performa per instrumen</h2><div id="bySym"></div></div>
+    <div class="card"><h2>Ringkasan performa per instrumen</h2><div id="bySym"></div></div>
     <div class="card">
       <h2>Riwayat transaksi</h2>
       <div class="filters">
@@ -296,9 +297,12 @@ function calendar(a,ym){
 }
 function group(el,a,key){
   const m={};a.forEach(t=>{const k=t[key]||'-';(m[k]=m[k]||[]).push(t)});
-  const rows=Object.entries(m).map(([k,v])=>{const s=stats(v);return[k,v.length,s.wr,s.tot]}).sort((x,y)=>y[3]-x[3]);
-  el.innerHTML=rows.length?`<table style="min-width:0"><thead><tr><th>${key==='symbol'?'Instrumen':'Emosi'}<th class="n">Trade<th class="n">Win %<th class="n">Net</tr></thead><tbody>`+
-   rows.map(r=>`<tr><td>${esc(r[0])}<td class="n">${r[1]}<td class="n">${r[2].toFixed(0)}%<td class="n ${sg(r[3])}">${fmt(r[3])}`).join('')+'</tbody></table>':'<div class="empty">Belum ada data</div>'
+  const rows=Object.entries(m).map(([k,v])=>{const s=stats(v);return[k,s.wr,s.tot]}).sort((x,y)=>y[2]-x[2]);
+  if(!rows.length){el.innerHTML='<div class="empty">Belum ada data</div>';return}
+  const all=stats(a);
+  el.innerHTML='<table style="min-width:0"><thead><tr><th>Instrumen<th class="n">Win %<th class="n">Perolehan %<th class="n">Net PNL</tr></thead><tbody>'+
+   rows.map(r=>`<tr><td>${esc(r[0])}<td class="n">${r[1].toFixed(0)}%<td class="n ${sg(r[2])}">${pct(r[2])}<td class="n ${sg(r[2])}">${fmt(r[2])}`).join('')+
+   `<tr class="tot"><td><b>Total</b><td class="n"><b>${all.wr.toFixed(0)}%</b><td class="n ${sg(all.tot)}"><b>${pct(all.tot)}</b><td class="n ${sg(all.tot)}"><b>${fmt(all.tot)}</b>`+'</tbody></table>'
 }
 
 /* ---------- Render ---------- */
