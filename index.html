@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jurnal Trading</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef1f5;--sf:#fff;--sf2:#f6f8fb;--ink:#14213d;--mut:#6b778c;--ln:#dde3ec;--ac:#1f4fd8;--up:#0f9d6b;--dn:#d64550;--upbg:#dcf4ea;--dnbg:#fbe3e5;--r:10px}
+@media(prefers-color-scheme:dark){:root{--bg:#0d131f;--sf:#151d2d;--sf2:#1b2538;--ink:#e6ebf5;--mut:#8b97ad;--ln:#26324a;--ac:#6d93ff;--up:#2fd197;--dn:#ff7380;--upbg:#12372c;--dnbg:#40212a}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 'Instrument Sans',system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.wrap{max-width:1240px;margin:0 auto;padding:20px 16px 60px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:18px}
+h1{font-size:22px;margin:0;font-weight:700;letter-spacing:-.01em}
+.sub{color:var(--mut);font-size:13px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:99px;font-size:12px;background:var(--sf);border:1px solid var(--ln)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--mut)}.dot.on{background:var(--up)}.dot.err{background:var(--dn)}
+button,input,select,textarea{font:inherit;color:inherit}
+.btn{background:var(--sf);border:1px solid var(--ln);padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:500}
+.btn:hover{border-color:var(--ac)}
+.btn.pri{background:var(--ac);border-color:var(--ac);color:#fff}
+.btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:14px}
+.kpi{background:var(--sf);border:1px solid var(--ln);border-radius:var(--r);padding:14px}
+.kpi .l{color:var(--mut);font-size:12px}
+.kpi .v{font-size:22px;font-weight:700;margin-top:2px;letter-spacing:-.01em}
+.kpi .s{font-size:12px;color:var(--mut)}
+.kpi.main{border-left:4px solid var(--ac)}
+.up{color:var(--up)}.dn{color:var(--dn)}
+.grid{display:grid;grid-template-columns:340px 1fr;gap:14px;align-items:start}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+.card{background:var(--sf);border:1px solid var(--ln);border-radius:var(--r);padding:16px;margin-bottom:14px}
+.card h2{font-size:15px;margin:0 0 12px;font-weight:600}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label{display:block;font-size:12px;color:var(--mut);margin-bottom:10px}
+input,select,textarea{width:100%;margin-top:4px;padding:8px 10px;background:var(--sf2);border:1px solid var(--ln);border-radius:8px}
+textarea{resize:vertical;min-height:60px}
+.seg{display:flex;gap:6px;margin-top:4px}
+.seg button{flex:1;padding:8px;border:1px solid var(--ln);background:var(--sf2);border-radius:8px;cursor:pointer;font-weight:600}
+.seg button.on.buy{background:var(--upbg);border-color:var(--up);color:var(--up)}
+.seg button.on.sell{background:var(--dnbg);border-color:var(--dn);color:var(--dn)}
+.chartbox{width:100%;overflow:hidden}
+svg text{fill:var(--mut);font-size:11px;font-family:inherit}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal .h{font-size:11px;color:var(--mut);text-align:center}
+.cal .d{min-height:54px;border-radius:6px;background:var(--sf2);padding:4px 6px;font-size:11px;color:var(--mut);display:flex;flex-direction:column;justify-content:space-between}
+.cal .d b{font-size:12px}
+.cal .d.w{background:var(--upbg);color:var(--up)}.cal .d.l{background:var(--dnbg);color:var(--dn)}
+.cal .e{background:none}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:700px){.two{grid-template-columns:1fr}}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:780px}
+th{font-size:12px;color:var(--mut);font-weight:500;text-align:left;padding:8px;border-bottom:1px solid var(--ln);white-space:nowrap}
+td{padding:9px 8px;border-bottom:1px solid var(--ln);white-space:nowrap}
+td.n,th.n{text-align:right}
+.tag{padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600}
+.tag.buy{background:var(--upbg);color:var(--up)}.tag.sell{background:var(--dnbg);color:var(--dn)}
+.x{background:none;border:0;color:var(--mut);cursor:pointer;font-size:16px}.x:hover{color:var(--dn)}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.filters select{width:auto;margin:0}
+.empty{padding:28px;text-align:center;color:var(--mut)}
+dialog{border:1px solid var(--ln);border-radius:var(--r);background:var(--sf);color:var(--ink);max-width:440px;width:92%}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+.hint{font-size:12px;color:var(--mut);margin-top:6px}
+body:not(.adm) aside,body:not(.adm) .adm-only{display:none}
+body:not(.adm) .grid{grid-template-columns:1fr}
+.err{color:var(--dn);font-size:12px;min-height:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div><h1>Jurnal Trading</h1><div class="sub" id="period">Memuat data…</div></div>
+  <div class="bar">
+    <span class="pill"><span class="dot" id="dot"></span><span id="stat">Mode lokal</span></span>
+    <button class="btn" id="bRefresh">Muat ulang</button>
+    <button class="btn" id="bCsv">Ekspor CSV</button>
+    <button class="btn adm-only" id="bSet">Pengaturan</button>
+    <button class="btn" id="bLogin">Masuk admin</button>
+  </div>
+</header>
+
+<section class="kpis" id="kpis"></section>
+
+<div class="grid">
+  <aside>
+    <form class="card" id="f" autocomplete="off">
+      <h2>Catat transaksi</h2>
+      <div class="row">
+        <label>Tanggal<input type="date" id="date" required></label>
+        <label>Instrumen<input id="symbol" list="syms" placeholder="XAUUSD" required></label>
+      </div>
+      <datalist id="syms"><option>XAUUSD<option>EURUSD<option>GBPUSD<option>USDJPY<option>BTCUSD<option>NAS100</datalist>
+      <div class="row">
+        <label>PNL (USD)<input type="number" step="any" id="pnl" placeholder="-25.50 atau 80" required></label>
+        <label>Fee / swap<input type="number" step="any" id="fee" value="0"></label>
+      </div>
+      <label>Catatan<textarea id="note" placeholder="Alasan entry, evaluasi, pelajaran…"></textarea></label>
+      <button class="btn pri" style="width:100%" id="bSave">Simpan transaksi</button>
+    </form>
+  </aside>
+
+  <main>
+    <div class="card"><h2>Kurva ekuitas (Net PNL kumulatif)</h2><div class="chartbox" id="eq"></div></div>
+    <div class="two">
+      <div class="card"><h2>PNL harian</h2><div class="chartbox" id="daily"></div></div>
+      <div class="card"><h2 id="calT">Kalender</h2><div class="cal" id="cal"></div></div>
+    </div>
+    <div class="card"><h2>Performa per instrumen</h2><div id="bySym"></div></div>
+    <div class="card">
+      <h2>Riwayat transaksi</h2>
+      <div class="filters">
+        <select id="fMonth"></select><select id="fSym"></select><select id="fRes"><option value="">Semua hasil<option value="w">Profit<option value="l">Loss</select>
+      </div>
+      <div class="tw"><table><thead><tr><th>Tanggal<th>Instrumen<th class="n">PNL<th class="n">Fee<th class="n">Net PNL<th class="n">Perolehan %<th>Catatan<th class="adm-only"></tr></thead><tbody id="tb"></tbody></table></div>
+    </div>
+  </main>
+</div>
+</div>
+
+<dialog id="dlg">
+  <form method="dialog">
+    <h2 style="margin-top:0">Pengaturan koneksi</h2>
+    <label>URL Web App Apps Script<input id="api" placeholder="https://script.google.com/macros/s/.../exec"></label>
+    <label>Token (opsional, sama dengan di Code.gs)<input id="tok" type="password"></label>
+    <label>Modal awal (USD)<input id="cap" type="number" step="any" value="1000"></label>
+    <div class="hint">Tanpa URL, data disimpan di browser ini saja (mode lokal).</div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
+      <button class="btn" value="cancel">Batal</button><button class="btn pri" id="bOk" value="ok">Simpan pengaturan</button>
+    </div>
+  </form>
+</dialog>
+<dialog id="dlgL">
+  <form id="fL">
+    <h2 style="margin-top:0">Masuk admin</h2>
+    <label>Password<input id="pw" type="password" autocomplete="current-password" required></label>
+    <div class="err" id="err"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
+      <button class="btn" type="button" id="bCancel">Batal</button><button class="btn pri">Masuk</button>
+    </div>
+  </form>
+</dialog>
+<div class="toast" id="toast"></div>
+
+<script>
+const $=s=>document.querySelector(s);
+const LS={get:(k,d='')=>{try{return localStorage.getItem(k)??d}catch(e){return d}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
+const DEFAULT_API=''; // <- tempel URL Web App (/exec) di sini agar member otomatis terhubung
+const HASH='d4a1c4f7714bcb6ebe6deb14039c423c8ccbc8c5d48a03f25312c0eb911fe24d'; // SHA-256 password, hanya dipakai di mode lokal (tanpa Apps Script)
+const SS={get:()=>{try{return sessionStorage.getItem('tj_adm')||''}catch(e){return ''}},set:v=>{try{sessionStorage.setItem('tj_adm',v)}catch(e){}}};
+let ADM=SS.get();
+let T=[],API=LS.get('tj_api')||DEFAULT_API,TOK=LS.get('tj_tok'),CAP=+LS.get('tj_cap','1000')||0;
+const fmt=(n,d=2)=>(n<0?'-':'')+'$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+const pct=n=>CAP?(n>0?'+':'')+(n/CAP*100).toFixed(2)+'%':'-';
+const sg=n=>n>0?'up':n<0?'dn':'';
+const net=t=>(+t.pnl||0)-(+t.fee||0);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400)}
+function status(s,m){$('#dot').className='dot '+s;$('#stat').textContent=m}
+
+/* ---------- Data layer: Apps Script atau lokal ---------- */
+async function load(){
+  if(!API){T=JSON.parse(LS.get('tj_local','[]'));status('','Mode lokal');return render()}
+  try{status('','Menghubungkan…');
+    const r=await fetch(API+'?token='+encodeURIComponent(TOK));const j=await r.json();
+    if(!j.ok)throw new Error(j.error);T=j.data;status('on','Terhubung ke Sheets')
+  }catch(e){status('err','Gagal: '+e.message);toast('Gagal memuat dari Apps Script')}
+  render()
+}
+async function post(body){
+  const r=await fetch(API,{method:'POST',body:JSON.stringify({admin:ADM,...body,token:TOK})}); // text/plain: tanpa preflight CORS
+  const j=await r.json();if(!j.ok)throw new Error(j.error);return j
+}
+async function addTrade(t){
+  if(!API){t.id=Math.random().toString(36).slice(2,10);T.push(t);LS.set('tj_local',JSON.stringify(T));return}
+  const j=await post({action:'add',trade:t});t.id=j.id;T.push(t)
+}
+async function delTrade(id){
+  if(!API){T=T.filter(t=>t.id!==id);LS.set('tj_local',JSON.stringify(T));return}
+  await post({action:'delete',id});T=T.filter(t=>t.id!==id)
+}
+
+/* ---------- Statistik ---------- */
+function stats(a){
+  const n=a.map(net),w=n.filter(x=>x>0),l=n.filter(x=>x<0);
+  const tot=n.reduce((x,y)=>x+y,0),gw=w.reduce((x,y)=>x+y,0),gl=Math.abs(l.reduce((x,y)=>x+y,0));
+  let cum=0,pk=0,dd=0;[...a].sort((x,y)=>x.date.localeCompare(y.date)).forEach(t=>{cum+=net(t);pk=Math.max(pk,cum);dd=Math.max(dd,pk-cum)});
+  const days={};a.forEach(t=>days[t.date]=(days[t.date]||0)+net(t));
+  const dv=Object.entries(days);
+  return{tot,cnt:a.length,wr:a.length?w.length/a.length*100:0,pf:gl?gw/gl:(gw?Infinity:0),
+    aw:w.length?gw/w.length:0,al:l.length?-gl/l.length:0,dd,days,
+    best:dv.length?dv.reduce((x,y)=>y[1]>x[1]?y:x):null,worst:dv.length?dv.reduce((x,y)=>y[1]<x[1]?y:x):null,
+    exp:a.length?tot/a.length:0}
+}
+function kpis(s){
+  const roi=CAP?s.tot/CAP*100:0,rr=s.al?Math.abs(s.aw/s.al):0;
+  const k=[['Total Net PNL',fmt(s.tot),sg(s.tot),CAP?`${roi.toFixed(2)}% dari modal ${fmt(CAP,0)}`:'','main'],
+   ['Win rate',s.wr.toFixed(1)+'%','',`${s.cnt} transaksi`],
+   ['Profit factor',s.pf===Infinity?'∞':s.pf.toFixed(2),s.pf>=1?'up':'dn','Gross profit / gross loss'],
+   ['Rata-rata win / loss',`${fmt(s.aw,0)} / ${fmt(s.al,0)}`,'',`Rasio ${rr.toFixed(2)} : 1`],
+   ['Expectancy',fmt(s.exp),sg(s.exp),'Rata-rata per transaksi'],
+   ['Max drawdown',fmt(-s.dd),s.dd?'dn':'','Dari puncak ekuitas'],
+   ['Hari terbaik',s.best?fmt(s.best[1]):'-','up',s.best?s.best[0]:''],
+   ['Hari terburuk',s.worst?fmt(s.worst[1]):'-','dn',s.worst?s.worst[0]:'']];
+  $('#kpis').innerHTML=k.map(([l,v,c,sub,m])=>`<div class="kpi ${m||''}"><div class="l">${l}</div><div class="v ${c}">${v}</div><div class="s">${sub||'&nbsp;'}</div></div>`).join('')
+}
+
+/* ---------- Grafik SVG ---------- */
+function line(el,pts,labels){
+  if(!pts.length){el.innerHTML='<div class="empty">Belum ada data</div>';return}
+  const W=700,H=240,p={l:52,r:12,t:10,b:24};
+  const mn=Math.min(0,...pts),mx=Math.max(0,...pts),rg=(mx-mn)||1;
+  const x=i=>p.l+(pts.length===1?(W-p.l-p.r)/2:i*(W-p.l-p.r)/(pts.length-1));
+  const y=v=>p.t+(mx-v)/rg*(H-p.t-p.b);
+  const d=pts.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)).join('');
+  const area=d+`L${x(pts.length-1)} ${y(0)}L${x(0)} ${y(0)}Z`;
+  const last=pts[pts.length-1],col=last>=0?'var(--up)':'var(--dn)';
+  let g='';for(let i=0;i<=4;i++){const v=mn+rg*i/4;g+=`<line x1="${p.l}" x2="${W-p.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--ln)"/><text x="${p.l-6}" y="${y(v)+4}" text-anchor="end">${Math.round(v)}</text>`}
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Kurva ekuitas">${g}
+  <line x1="${p.l}" x2="${W-p.r}" y1="${y(0)}" y2="${y(0)}" stroke="var(--mut)" stroke-dasharray="3 3"/>
+  <path d="${area}" fill="${col}" opacity=".12"/><path d="${d}" fill="none" stroke="${col}" stroke-width="2.2"/>
+  <text x="${p.l}" y="${H-6}">${labels[0]}</text><text x="${W-p.r}" y="${H-6}" text-anchor="end">${labels[labels.length-1]}</text></svg>`
+}
+function bars(el,vals,labels){
+  if(!vals.length){el.innerHTML='<div class="empty">Belum ada data</div>';return}
+  const W=340,H=200,p={l:8,r:8,t:10,b:22},mx=Math.max(...vals.map(Math.abs),1),z=(H-p.t-p.b)/2+p.t,bw=(W-p.l-p.r)/vals.length;
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="PNL harian"><line x1="0" x2="${W}" y1="${z}" y2="${z}" stroke="var(--ln)"/>`+
+  vals.map((v,i)=>{const h=Math.abs(v)/mx*(z-p.t);return `<rect x="${p.l+i*bw+bw*.15}" width="${bw*.7}" y="${v>=0?z-h:z}" height="${Math.max(h,1)}" rx="2" fill="${v>=0?'var(--up)':'var(--dn)'}"><title>${labels[i]}: ${fmt(v)}</title></rect>`}).join('')+
+  `<text x="${p.l}" y="${H-6}">${labels[0]}</text><text x="${W-p.r}" y="${H-6}" text-anchor="end">${labels[labels.length-1]}</text></svg>`
+}
+function calendar(a,ym){
+  const [Y,M]=ym.split('-').map(Number),first=new Date(Y,M-1,1),dim=new Date(Y,M,0).getDate(),off=(first.getDay()+6)%7;
+  const days={};a.forEach(t=>days[t.date]=(days[t.date]||0)+net(t));
+  $('#calT').textContent='Kalender '+first.toLocaleDateString('id-ID',{month:'long',year:'numeric'});
+  let h=['Sen','Sel','Rab','Kam','Jum','Sab','Min'].map(d=>`<div class="h">${d}</div>`).join('')+'<div class="d e"></div>'.repeat(off);
+  for(let i=1;i<=dim;i++){const k=`${ym}-${String(i).padStart(2,'0')}`,v=days[k];
+    h+=`<div class="d ${v>0?'w':v<0?'l':''}"><b>${i}</b><span>${v===undefined?'':(v>0?'+':'')+Math.round(v)}</span></div>`}
+  $('#cal').innerHTML=h
+}
+function group(el,a,key){
+  const m={};a.forEach(t=>{const k=t[key]||'-';(m[k]=m[k]||[]).push(t)});
+  const rows=Object.entries(m).map(([k,v])=>{const s=stats(v);return[k,v.length,s.wr,s.tot]}).sort((x,y)=>y[3]-x[3]);
+  el.innerHTML=rows.length?`<table style="min-width:0"><thead><tr><th>${key==='symbol'?'Instrumen':'Emosi'}<th class="n">Trade<th class="n">Win %<th class="n">Net</tr></thead><tbody>`+
+   rows.map(r=>`<tr><td>${esc(r[0])}<td class="n">${r[1]}<td class="n">${r[2].toFixed(0)}%<td class="n ${sg(r[3])}">${fmt(r[3])}`).join('')+'</tbody></table>':'<div class="empty">Belum ada data</div>'
+}
+
+/* ---------- Render ---------- */
+function opts(){
+  const ms=[...new Set(T.map(t=>t.date.slice(0,7)))].sort().reverse(),cm=$('#fMonth').value||ms[0]||'',
+        ss=[...new Set(T.map(t=>t.symbol))].sort(),cs=$('#fSym').value;
+  $('#fMonth').innerHTML=ms.map(m=>`<option value="${m}">${new Date(m+'-01').toLocaleDateString('id-ID',{month:'long',year:'numeric'})}</option>`).join('')+'<option value="all">Semua waktu</option>';
+  $('#fMonth').value=ms.includes(cm)||cm==='all'?cm:(ms[0]||'all');
+  $('#fSym').innerHTML='<option value="">Semua instrumen</option>'+ss.map(s=>`<option>${esc(s)}</option>`).join('');$('#fSym').value=ss.includes(cs)?cs:''
+}
+function render(){
+  opts();
+  const m=$('#fMonth').value,sy=$('#fSym').value,rs=$('#fRes').value;
+  let a=T.filter(t=>(m==='all'||t.date.startsWith(m))&&(!sy||t.symbol===sy)&&(!rs||(rs==='w'?net(t)>0:net(t)<0)));
+  a.sort((x,y)=>y.date.localeCompare(x.date));
+  const s=stats(a);kpis(s);
+  $('#period').textContent=a.length?`${a.length} transaksi · ${m==='all'?'seluruh periode':$('#fMonth').selectedOptions[0].text}`:'Belum ada transaksi pada periode ini';
+  const asc=[...a].reverse();let c=0;
+  line($('#eq'),asc.map(t=>c+=net(t)),asc.map(t=>t.date));
+  const dk=Object.keys(s.days).sort();bars($('#daily'),dk.map(k=>s.days[k]),dk);
+  calendar(a,m==='all'?(T.length?T.map(t=>t.date).sort().pop().slice(0,7):new Date().toISOString().slice(0,7)):m);
+  group($('#bySym'),a,'symbol');
+  $('#tb').innerHTML=a.length?a.map(t=>{const n=net(t);return `<tr><td>${t.date}<td><b>${esc(t.symbol)}</b><td class="n ${sg(+t.pnl)}">${fmt(+t.pnl)}<td class="n">${fmt(+t.fee||0)}<td class="n ${sg(n)}"><b>${fmt(n)}</b><td class="n ${sg(n)}">${pct(n)}<td title="${esc(t.note)}" style="max-width:220px;overflow:hidden;text-overflow:ellipsis">${esc(t.note)}<td class="adm-only"><button class="x" data-id="${t.id}" aria-label="Hapus transaksi">×</button>`}).join(''):'<tr><td colspan="8" class="empty">Belum ada transaksi. Isi formulir di samping untuk mencatat transaksi pertama.</tr>'
+}
+
+/* ---------- Events ---------- */
+$('#date').value=new Date().toISOString().slice(0,10);
+$('#f').onsubmit=async e=>{e.preventDefault();if(!ADM)return;const b=$('#bSave');b.disabled=true;b.textContent='Menyimpan…';
+  const t={date:$('#date').value,symbol:$('#symbol').value.trim().toUpperCase(),pnl:+$('#pnl').value,fee:+$('#fee').value||0,note:$('#note').value.trim()};
+  try{await addTrade(t);toast('Transaksi disimpan');['#pnl','#note'].forEach(s=>$(s).value='');$('#fee').value=0;render()}
+  catch(err){toast('Gagal menyimpan: '+err.message)}
+  b.disabled=false;b.textContent='Simpan transaksi'};
+$('#tb').onclick=async e=>{const id=e.target.dataset?.id;if(!ADM||!id||!confirm('Hapus transaksi ini? Baris di spreadsheet juga akan dihapus.'))return;
+  try{await delTrade(id);toast('Transaksi dihapus');render()}catch(err){toast('Gagal menghapus: '+err.message)}};
+['#fMonth','#fSym','#fRes'].forEach(s=>$(s).onchange=render);
+$('#bRefresh').onclick=load;
+$('#bSet').onclick=()=>{$('#api').value=API;$('#tok').value=TOK;$('#cap').value=CAP;$('#dlg').showModal()};
+$('#bOk').onclick=()=>{API=$('#api').value.trim()||DEFAULT_API;TOK=$('#tok').value;CAP=+$('#cap').value||0;LS.set('tj_api',API);LS.set('tj_tok',TOK);LS.set('tj_cap',CAP);setTimeout(load,0)};
+$('#bCsv').onclick=()=>{if(!T.length)return toast('Belum ada data untuk diekspor');
+  const h=['Tanggal','Instrumen','PNL','Fee','NetPNL','Catatan'];
+  const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+  const csv=[h.join(',')].concat(T.map(t=>[t.date,t.symbol,t.pnl,t.fee,net(t),t.note].map(q).join(','))).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='jurnal-trading.csv';a.click()};
+async function sha(t){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+function applyAdmin(){document.body.classList.toggle('adm',!!ADM);$('#bLogin').textContent=ADM?'Keluar admin':'Masuk admin'}
+$('#bLogin').onclick=()=>{if(ADM){ADM='';SS.set('');applyAdmin();return toast('Anda keluar dari mode admin')}$('#pw').value='';$('#err').textContent='';$('#dlgL').showModal();$('#pw').focus()};
+$('#bCancel').onclick=()=>$('#dlgL').close();
+$('#fL').onsubmit=async e=>{e.preventDefault();const p=$('#pw').value;
+  try{if(API)await post({action:'login',admin:p});else if(await sha(p)!==HASH)throw new Error('Password salah');
+    ADM=p;SS.set(p);$('#dlgL').close();applyAdmin();toast('Masuk sebagai admin')}
+  catch(err){$('#err').textContent=err.message||'Gagal masuk'}};
+applyAdmin();load();
+</script>
+</body>
+</html>
