@@ -116,6 +116,13 @@ tr.tot td{border-top:2px solid var(--ln);border-bottom:0;background:var(--sf2)}
 .banner{padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:13px}.banner[hidden]{display:none}
 .banner.warn{background:var(--sf2);border:1px solid #e0a800;color:var(--ink)}
 .banner.err{background:var(--dnbg);border:1px solid var(--dn);color:var(--dn)}
+.top{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.top .kpi .v{font-size:26px}.top .kpi .v small{font-size:14px;color:var(--mut);font-weight:500}
+.top .kpi .idr{font-size:16px;font-weight:600;margin-top:2px}
+.fxh{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.mini{border:1px solid var(--ln);background:var(--sf2);border-radius:6px;padding:2px 8px;cursor:pointer;font-size:12px;color:var(--ink)}
+.mini:hover{border-color:var(--ac)}
+@media(max-width:640px){.top{grid-template-columns:1fr;gap:8px}}
 </style>
 </head>
 <body>
@@ -132,6 +139,7 @@ tr.tot td{border-top:2px solid var(--ln);border-bottom:0;background:var(--sf2)}
 </header>
 
 <div class="banner" id="banner" hidden></div>
+<section class="top" id="top"></section>
 <section class="kpis" id="kpis"></section>
 
 <div class="grid">
@@ -176,6 +184,7 @@ tr.tot td{border-top:2px solid var(--ln);border-bottom:0;background:var(--sf2)}
     <label>URL Web App Apps Script<input id="api" placeholder="https://script.google.com/macros/s/.../exec"></label>
     <label>Token (opsional, sama dengan di Code.gs)<input id="tok" type="password"></label>
     <label>Modal awal (USD)<input id="cap" type="number" step="any" value="1000"></label>
+    <label>Kurs USD/IDR manual (opsional, kosongkan untuk otomatis)<input id="fxman" type="number" step="any" placeholder="mis. 16250"></label>
     <div class="hint">Tanpa URL, data disimpan di browser ini saja (mode lokal).</div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
       <button class="btn" value="cancel">Batal</button><button class="btn pri" id="bOk" value="ok">Simpan pengaturan</button>
@@ -197,11 +206,12 @@ tr.tot td{border-top:2px solid var(--ln);border-bottom:0;background:var(--sf2)}
 <script>
 const $=s=>document.querySelector(s);
 const LS={get:(k,d='')=>{try{return localStorage.getItem(k)??d}catch(e){return d}},set:(k,v)=>{try{localStorage.setItem(k,v);return true}catch(e){return false}}};
+const DEFAULT_CAP=1000; // modal awal (USD) untuk semua pengunjung
 const DEFAULT_API='https://script.google.com/macros/s/AKfycbzmoaC-K1TAmTy5q84SeX5G2F5MbMoVMnpuca7mTSrBtNXWSN6X-tUJJVgaCLoILuL-/exec'; // <- tempel URL Web App (/exec) di sini agar member otomatis terhubung
 const HASH='d4a1c4f7714bcb6ebe6deb14039c423c8ccbc8c5d48a03f25312c0eb911fe24d'; // SHA-256 password, hanya dipakai di mode lokal (tanpa Apps Script)
 const SS={get:()=>{try{return sessionStorage.getItem('tj_adm')||''}catch(e){return ''}},set:v=>{try{sessionStorage.setItem('tj_adm',v)}catch(e){}}};
 let ADM=SS.get();
-let T=[],API=LS.get('tj_api')||DEFAULT_API,TOK=LS.get('tj_tok'),CAP=+LS.get('tj_cap','1000')||0;
+let T=[],API=LS.get('tj_api')||DEFAULT_API,TOK=LS.get('tj_tok'),CAP=+LS.get('tj_cap',String(DEFAULT_CAP))||0,FX={rate:0,t:0,src:''};
 const fmt=(n,d=2)=>(n<0?'-':'')+'$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
 const pct=n=>CAP?(n>0?'+':'')+(n/CAP*100).toFixed(2)+'%':'-';
 const sg=n=>n>0?'up':n<0?'dn':'';
@@ -224,6 +234,30 @@ function clean(rows){
     /^\d{4}-\d{2}-\d{2}$/.test(t.date)?ok.push(t):bad++});
   if(bad)banner('warn',bad+' baris di spreadsheet dilewati karena format tanggalnya tidak dikenali. Gunakan format yyyy-mm-dd.');
   return ok
+}
+const idr=v=>(v<0?'-':'')+'Rp '+Math.abs(Math.round(v)).toLocaleString('id-ID');
+const FXMAN=()=>+LS.get('tj_fxman','')||0;
+async function loadFx(force){
+  const man=FXMAN();
+  if(man){FX={rate:man,t:0,src:'manual'};return render()}
+  try{const c=JSON.parse(LS.get('tj_fx','null'));if(c&&c.rate)FX={rate:c.rate,t:c.t,src:'tersimpan'}}catch(e){}
+  if(!force&&FX.rate&&Date.now()-FX.t<36e5){FX.src='otomatis';return render()}
+  try{const r=await fetch('https://open.er-api.com/v6/latest/USD',{cache:'no-store'});const j=await r.json(),v=j.rates&&j.rates.IDR;if(!v)throw 0;
+    FX={rate:v,t:Date.now(),src:'otomatis'};LS.set('tj_fx',JSON.stringify({rate:v,t:FX.t}))}
+  catch(e){FX.src=FX.rate?'tersimpan (offline)':'gagal'}
+  render()
+}
+function renderTop(){
+  const tot=T.reduce((x,t)=>x+net(t),0),bal=CAP+tot,ok=FX.rate>0;
+  const when=FX.t?new Date(FX.t).toLocaleString('id-ID',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
+  $('#top').innerHTML=`<div class="kpi main"><div class="l">Total Balance</div>
+    <div class="v ${sg(tot)}">${fmt(bal)} <small>USD</small></div>
+    <div class="idr">${ok?'≈ '+idr(bal*FX.rate):'Kurs belum tersedia'}</div>
+    <div class="s">Modal ${fmt(CAP,0)} ${tot<0?'−':'+'} PNL ${fmt(Math.abs(tot))}</div></div>
+   <div class="kpi"><div class="fxh"><div class="l">Kurs USD / IDR</div><button class="mini" id="bFx" type="button" aria-label="Perbarui kurs">↻ Perbarui</button></div>
+    <div class="v">${ok?idr(FX.rate):'-'}</div>
+    <div class="s">${ok?'1 USD · '+FX.src+(when?' · '+when:''):'Gagal mengambil kurs. Tekan Perbarui atau isi kurs manual di Pengaturan.'}</div></div>`;
+  $('#bFx').onclick=()=>{toast('Memperbarui kurs…');loadFx(true)}
 }
 function banner(kind,msg){const b=$('#banner');b.className='banner '+(kind||'');b.textContent=msg||'';b.hidden=!msg}
 function modeBanner(){if(!API&&ADM)banner('warn','Mode lokal: transaksi hanya tersimpan di browser ini dan tidak masuk ke Google Sheets. Isi URL Apps Script di Pengaturan atau di DEFAULT_API.');else if(!API)banner('')}
@@ -265,14 +299,14 @@ function stats(a){
 }
 function kpis(s){
   const roi=CAP?s.tot/CAP*100:0,rr=s.al?Math.abs(s.aw/s.al):0;
-  const k=[['Total Net PNL',fmt(s.tot),sg(s.tot),CAP?`${roi.toFixed(2)}% dari modal ${fmt(CAP,0)}`:'','main'],
+  const k=[['Total Net PNL',fmt(s.tot),sg(s.tot),(CAP?`${roi.toFixed(2)}% dari modal ${fmt(CAP,0)}`:'')+(FX.rate?` · ≈ ${idr(s.tot*FX.rate)}`:''),'main'],
    ['Win rate',s.wr.toFixed(1)+'%','',`${s.cnt} transaksi`],
    ['Profit factor',s.pf===Infinity?'∞':s.pf.toFixed(2),s.pf>=1?'up':'dn','Gross profit / gross loss'],
-   ['Rata-rata win / loss',`${fmt(s.aw,0)} / ${fmt(s.al,0)}`,'',`Rasio ${rr.toFixed(2)} : 1`],
+   ['Rata-rata win / loss',`${fmt(s.aw,0)} / ${fmt(s.al,0)}`,'',s.al?`Rasio ${rr.toFixed(2)} : 1`:'Belum ada loss'],
    ['Expectancy',fmt(s.exp),sg(s.exp),'Rata-rata per transaksi'],
    ['Max drawdown',fmt(-s.dd),s.dd?'dn':'','Dari puncak ekuitas'],
-   ['Hari terbaik',s.best?fmt(s.best[1]):'-','up',s.best?s.best[0]:''],
-   ['Hari terburuk',s.worst?fmt(s.worst[1]):'-','dn',s.worst?s.worst[0]:'']];
+   ['Hari terbaik',s.best?fmt(s.best[1]):'-',s.best?sg(s.best[1]):'',s.best?s.best[0]:''],
+   ['Hari terburuk',s.worst?fmt(s.worst[1]):'-',s.worst?sg(s.worst[1]):'',s.worst?s.worst[0]:'']];
   $('#kpis').innerHTML=k.map(([l,v,c,sub,m])=>`<div class="kpi ${m||''}"><div class="l">${l}</div><div class="v ${c}">${v}</div><div class="s">${sub||'&nbsp;'}</div></div>`).join('')
 }
 
@@ -329,7 +363,7 @@ function opts(){
   $('#fSym').innerHTML='<option value="">Semua instrumen</option>'+ss.map(s=>`<option>${esc(s)}</option>`).join('');$('#fSym').value=ss.includes(cs)?cs:''
 }
 function render(){
-  opts();
+  opts();renderTop();
   const m=$('#fMonth').value,sy=$('#fSym').value,rs=$('#fRes').value;
   let a=T.filter(t=>(m==='all'||t.date.startsWith(m))&&(!sy||t.symbol===sy)&&(!rs||(rs==='w'?net(t)>0:net(t)<0)));
   a.sort((x,y)=>y.date.localeCompare(x.date));
@@ -354,8 +388,8 @@ $('#tb').onclick=async e=>{const id=e.target.dataset?.id;if(!ADM||!id||!confirm(
   try{await delTrade(id);toast('Transaksi dihapus');render()}catch(err){toast('Gagal menghapus: '+err.message)}};
 ['#fMonth','#fSym','#fRes'].forEach(s=>$(s).onchange=render);
 $('#bRefresh').onclick=load;
-$('#bSet').onclick=()=>{$('#api').value=API;$('#tok').value=TOK;$('#cap').value=CAP;$('#dlg').showModal()};
-$('#bOk').onclick=()=>{API=$('#api').value.trim()||DEFAULT_API;TOK=$('#tok').value;CAP=+$('#cap').value||0;LS.set('tj_api',API);LS.set('tj_tok',TOK);LS.set('tj_cap',CAP);setTimeout(load,0)};
+$('#bSet').onclick=()=>{$('#api').value=API;$('#tok').value=TOK;$('#cap').value=CAP;$('#fxman').value=FXMAN()||'';$('#dlg').showModal()};
+$('#bOk').onclick=()=>{API=$('#api').value.trim()||DEFAULT_API;TOK=$('#tok').value;CAP=+$('#cap').value||0;LS.set('tj_api',API);LS.set('tj_tok',TOK);LS.set('tj_cap',CAP);LS.set('tj_fxman',$('#fxman').value);setTimeout(()=>{load();loadFx(true)},0)};
 $('#bCsv').onclick=()=>{if(!T.length)return toast('Belum ada data untuk diekspor');
   const h=['Tanggal','Instrumen','PNL','Fee','NetPNL','Catatan'];
   const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
@@ -369,7 +403,7 @@ $('#fL').onsubmit=async e=>{e.preventDefault();const p=$('#pw').value;
   try{if(API)await post({action:'login',admin:p});else if(await sha(p)!==HASH)throw new Error('Password salah');
     ADM=p;SS.set(p);$('#dlgL').close();applyAdmin();toast('Masuk sebagai admin')}
   catch(err){$('#err').textContent=err.message||'Gagal masuk'}};
-applyAdmin();load();
+applyAdmin();load();loadFx();
 let lastW=innerWidth,rt;addEventListener('resize',()=>{if(innerWidth===lastW)return;lastW=innerWidth;clearTimeout(rt);rt=setTimeout(render,150)});
 </script>
 </body>
