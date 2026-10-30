@@ -211,16 +211,30 @@ function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');se
 function status(s,m){$('#dot').className='dot '+s;$('#stat').textContent=m}
 
 /* ---------- Data layer: Apps Script atau lokal ---------- */
+function normDate(v){
+  let s=String(v??'').trim(),m;
+  if(/^\d{4}-\d{2}-\d{2}/.test(s))return s.slice(0,10);
+  if(m=s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/))return m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');
+  const d=new Date(s);
+  return isNaN(d)?s:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')
+}
+function clean(rows){
+  const ok=[];let bad=0;
+  (rows||[]).forEach(t=>{t.date=normDate(t.date);t.pnl=Number(t.pnl)||0;t.fee=Number(t.fee)||0;t.symbol=String(t.symbol??'');
+    /^\d{4}-\d{2}-\d{2}$/.test(t.date)?ok.push(t):bad++});
+  if(bad)banner('warn',bad+' baris di spreadsheet dilewati karena format tanggalnya tidak dikenali. Gunakan format yyyy-mm-dd.');
+  return ok
+}
 function banner(kind,msg){const b=$('#banner');b.className='banner '+(kind||'');b.textContent=msg||'';b.hidden=!msg}
 function modeBanner(){if(!API&&ADM)banner('warn','Mode lokal: transaksi hanya tersimpan di browser ini dan tidak masuk ke Google Sheets. Isi URL Apps Script di Pengaturan atau di DEFAULT_API.');else if(!API)banner('')}
 async function parse(r){const t=await r.text();try{return JSON.parse(t)}catch(e){throw new Error('Respons bukan JSON. Pastikan deployment Apps Script berakses "Anyone", memakai URL /exec, dan sudah di-deploy ulang (New version).')}}
 async function load(){
   banner('');
-  if(!API){T=JSON.parse(LS.get('tj_local','[]'));status('','Mode lokal');modeBanner();return render()}
+  if(!API){T=clean(JSON.parse(LS.get('tj_local','[]')));status('','Mode lokal');modeBanner();return render()}
   try{status('','Menghubungkan…');
     const r=await fetch(API+(API.includes('?')?'&':'?')+'token='+encodeURIComponent(TOK)+'&_='+Date.now(),{cache:'no-store'});
     const j=await parse(r);
-    if(!j.ok)throw new Error(j.error);T=j.data;status('on','Terhubung ke Sheets')
+    if(!j.ok)throw new Error(j.error);T=clean(j.data);status('on','Terhubung ke Sheets')
   }catch(e){status('err','Gagal memuat');banner('err','Gagal memuat data dari Google Sheets: '+e.message+' Tekan "Muat ulang" untuk mencoba lagi.')}
   render()
 }
@@ -286,6 +300,7 @@ function bars(el,vals,labels){
   `<text x="${p.l}" y="${H-6}">${labels[0]}</text><text x="${W-p.r}" y="${H-6}" text-anchor="end">${labels[labels.length-1]}</text></svg>`
 }
 function calendar(a,ym){
+  if(!/^\d{4}-\d{2}$/.test(ym))ym=new Date().toISOString().slice(0,7);
   const [Y,M]=ym.split('-').map(Number),first=new Date(Y,M-1,1),dim=new Date(Y,M,0).getDate(),off=(first.getDay()+6)%7;
   const days={};a.forEach(t=>days[t.date]=(days[t.date]||0)+net(t));
   const mt=Object.entries(days).filter(([k])=>k.startsWith(ym)).reduce((x,[,v])=>x+v,0),sgn=v=>(v>0?'+':v<0?'-':'')+'$'+Math.abs(Math.round(v)).toLocaleString('en-US');
