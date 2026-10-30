@@ -192,7 +192,7 @@ body:not(.adm) .grid{grid-template-columns:1fr}
 <script>
 const $=s=>document.querySelector(s);
 const LS={get:(k,d='')=>{try{return localStorage.getItem(k)??d}catch(e){return d}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
-const DEFAULT_API=''; // <- tempel URL Web App (/exec) di sini agar member otomatis terhubung
+const DEFAULT_API='https://script.google.com/macros/s/AKfycbzmoaC-K1TAmTy5q84SeX5G2F5MbMoVMnpuca7mTSrBtNXWSN6X-tUJJVgaCLoILuL-/exec'; // <- tempel URL Web App (/exec) di sini agar member otomatis terhubung
 const HASH='d4a1c4f7714bcb6ebe6deb14039c423c8ccbc8c5d48a03f25312c0eb911fe24d'; // SHA-256 password, hanya dipakai di mode lokal (tanpa Apps Script)
 const SS={get:()=>{try{return sessionStorage.getItem('tj_adm')||''}catch(e){return ''}},set:v=>{try{sessionStorage.setItem('tj_adm',v)}catch(e){}}};
 let ADM=SS.get();
